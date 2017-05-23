@@ -37,7 +37,7 @@ def runtime_validation(data=None, *, enabled: Optional[bool]=None, group: Option
         if data is None:
             return functools.partial(runtime_validation, enabled=enabled, group=group)
 
-        configuration = Settings(enabled=enabled, group=group)
+        configuration = Settings(enabled=enabled, group=group) # type: Settings
 
         if data.__class__ is type and is_type_of_type(data, tuple, covariant=True):
             try:

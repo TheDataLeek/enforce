@@ -1,4 +1,5 @@
 import typing
+from typing import Optional, List
 import inspect
 
 from .wrappers import EnforceProxy
@@ -11,7 +12,14 @@ ValidationResult = typing.NamedTuple('ValidationResult', [('valid', bool), ('dat
 
 class BaseNode:
 
-    def __init__(self, expected_data_type, is_sequence, type_var=False, covariant=None, contravariant=None):
+    def __init__(
+            self,
+            expected_data_type,
+            is_sequence,
+            type_var: Optional[bool]=False,
+            covariant: Optional[bool]=None,
+            contravariant: Optional[bool]=None
+        ) -> None:
         # is_sequence specifies if it is a sequence node
         # If it is not, then it must be a choice node, i.e. every children is a potential alternative
         # And at least one has to be satisfied
@@ -29,8 +37,8 @@ class BaseNode:
         self.bound = False
         self.in_type = None
 
-        self.original_children = []
-        self.children = []
+        self.original_children = [] # type: List
+        self.children = [] # type: List
 
     def validate(self, data, validator, force=False):
         """

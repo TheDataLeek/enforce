@@ -1,4 +1,5 @@
 import typing
+from typing import Optional, Any, List, Tuple, Dict
 
 from .nodes import BaseNode
 from .parsers import get_parser
@@ -7,16 +8,16 @@ from .utils import visit
 
 class Validator:
 
-    def __init__(self, parent: typing.Optional['Validator']=None):
+    def __init__(self, parent: Optional['Validator']=None) -> None:
         self.parent = parent
         self.settings = None
-        self.errors = []
-        self.globals = {}
-        self.data_out = {}
-        self.roots = {}
-        self.all_nodes = []
+        self.errors = [] # type: List[Tuple[str, str]]
+        self.globals = {} # type: Dict
+        self.data_out = {} # type: Dict[str, Any]
+        self.roots = {} # type: Dict[str, Any]
+        self.all_nodes = [] # type: List
 
-    def validate(self, data: typing.Any, param_name: str) -> bool:
+    def validate(self, data: Any, param_name: str) -> bool:
         """
         Validate Syntax Tree of given function using generators
         """
