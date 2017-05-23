@@ -2,7 +2,7 @@ import builtins
 import typing
 import numbers
 from collections import ChainMap
-from typing import Optional, Union, Any, TypeVar, Tuple, Generic
+from typing import Optional, Union, Any, TypeVar, Tuple, Generic, Dict, List, Set
 
 # This enables a support for Python version 3.5.0-3.5.2
 try:
@@ -13,7 +13,7 @@ except ImportError:
 from .utils import visit
 
 
-class EnhancedTypeVar:
+class EnhancedTypeVar(object):
     """
     Utility wrapper for adding extra properties to default TypeVars
     Allows TypeVars to be bivariant
@@ -26,7 +26,7 @@ class EnhancedTypeVar:
                  bound: Optional[type] = None,
                  covariant: Optional[bool] = False,
                  contravariant: Optional[bool] = False,
-                 type_var: Optional['TypeVar'] = None):
+                 type_var: Optional['TypeVar'] = None) -> None:
         if type_var is not None:
             self.__name__ = type_var.__name__
             self.__bound__ = type_var.__bound__
@@ -119,9 +119,9 @@ TYPE_ALIASES = {
     bool: Boolean,
     float: numbers.Real,
     complex: numbers.Complex,
-    dict: typing.Dict,
-    list: typing.List,
-    set: typing.Set,
+    dict: Dict,
+    list: List,
+    set: Set,
     None: type(None)
 }
 
@@ -140,8 +140,8 @@ def is_type_of_type(data: Union[type, str, None],
                     data_type: Union[type, str, 'TypeVar', EnhancedTypeVar, None],
                     covariant: bool = False,
                     contravariant: bool = False,
-                    local_variables: Optional[typing.Dict]=None,
-                    global_variables: Optional[typing.Dict]=None
+                    local_variables: Optional[Dict]=None,
+                    global_variables: Optional[Dict]=None
                    ) -> bool:
     """
     Returns if the type or type like object is of the same type as constrained

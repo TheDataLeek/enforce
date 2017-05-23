@@ -4,6 +4,8 @@ import threading
 import functools
 from functools import wraps
 
+from typing import Optional, Callable
+
 from wrapt import decorator, ObjectProxy
 
 from .settings import Settings
@@ -16,7 +18,7 @@ BuildLock = threading.RLock()
 RunLock = threading.RLock()
 
 
-def runtime_validation(data=None, *, enabled=None, group=None):
+def runtime_validation(data=None, *, enabled: Optional[bool]=None, group: Optional[str]=None):
     """
     This decorator enforces runtime parameter and return value type checking validation
     It uses the standard Python 3.5 syntax for type hinting declaration
@@ -37,7 +39,6 @@ def runtime_validation(data=None, *, enabled=None, group=None):
 
         configuration = Settings(enabled=enabled, group=group)
 
-        # ????
         if data.__class__ is type and is_type_of_type(data, tuple, covariant=True):
             try:
                 fields = data._fields
@@ -58,7 +59,7 @@ def runtime_validation(data=None, *, enabled=None, group=None):
         return generate_decorated()
 
 
-def decorate(data, configuration, obj_instance=None, parent_root=None) -> typing.Callable:
+def decorate(data, configuration, obj_instance=None, parent_root=None) -> Callable:
     """
     Performs the function decoration with a type checking wrapper
 

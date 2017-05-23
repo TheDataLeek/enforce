@@ -1,4 +1,6 @@
 import typing
+from typing import Optional, Dict, Any
+
 from copy import deepcopy
 
 
@@ -24,7 +26,11 @@ def visit(generator):
     return last_result
 
 
-def merge_dictionaries(original_data, update, merge_lists=False):
+def merge_dictionaries(
+        original_data: Dict[Any, Any],
+        update: Dict[Any, Any],
+        merge_lists: Optional[bool]=False
+    ) -> Dict[Any, Any]:
     """
     Recursively merges values of two dictionaries
     """
