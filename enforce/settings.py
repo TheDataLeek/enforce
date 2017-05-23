@@ -210,8 +210,6 @@ class GlobalSettingsObject(object):
         'groups': dict()
     }
     """
-    __slots__ = ['__dict__', 'enabled', 'default', 'mode', 'groups']
-
     def __init__(self):
         self.enabled = True # type: bool
         self.default = True # type: bool
