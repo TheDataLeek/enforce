@@ -229,5 +229,8 @@ class GlobalSettingsObject(object):
         for key in self.__dict__.keys():
             yield key
 
+    def __len__(self) -> int:
+        return len(self.__dict__)
+
 
 _GLOBAL_SETTINGS = GlobalSettingsObject()
