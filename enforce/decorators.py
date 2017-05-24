@@ -48,11 +48,14 @@ def runtime_validation(
         # otherwise we need to parse the data
         configuration = Settings(enabled=enabled, group=group) # type: Settings
 
-        if isinstance(data.__class__, type) and is_type_of_type(data, tuple, covariant=True):
+        if data.__class__ is type and is_type_of_type(data, tuple, covariant=True):
             try:
                 fields = data._fields # type: Tuple[str, ...]
                 # this type is giving error in mypy even though it *works* and is *correct*
-                field_types = data._field_types # type: OrderedDict[str, type]
+                # ╰─>$ NamedTuple('test', [('foo', int), ('bar', str)])(foo=5, bar='5')._field_types
+                # Out[3]: OrderedDict([('foo', int), ('bar', str)])
+
+                field_types = data._field_types # type: OrderedDict
 
                 # This is the NameTupleProxy from below
                 return get_typed_namedtuple(configuration, data, fields, field_types)
@@ -62,7 +65,7 @@ def runtime_validation(
 
         build_wrapper = get_wrapper_builder(configuration)
 
-        if isinstance(data.__class__, property):
+        if data.__class__ is property:
             generate_decorated = build_wrapper(data.fset)
             return data.setter(generate_decorated())
 
@@ -183,7 +186,7 @@ def get_typed_namedtuple(
         configuration: Settings,
         typed_namedtuple: NamedTuple,
         fields: Tuple[str, ...],
-        fields_types: OrderedDict[str, type]
+        fields_types: OrderedDict
     ) -> object:
     args = ''.join(field + ': ' + (fields_types.get(field, any)).__name__ + ',' for field in fields)
     args = args[:-1]
