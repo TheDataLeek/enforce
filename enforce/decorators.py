@@ -191,7 +191,7 @@ def get_typed_namedtuple(
     args = ''.join(field + ': ' + (fields_types.get(field, any)).__name__ + ',' for field in fields)
     args = args[:-1]
 
-    context: Dict = {}
+    context = {} # type: Dict
 
     new_init_template = """def init_data({args}): return locals()"""
 
