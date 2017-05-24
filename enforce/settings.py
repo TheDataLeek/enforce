@@ -1,7 +1,7 @@
 import enum
 import collections
 
-from typing import Optional, Dict, Any, List, Union, Generator
+from typing import Optional, Dict, Any, List, Generator
 
 from .utils import merge_dictionaries
 
@@ -219,7 +219,7 @@ class GlobalSettingsObject(object):
     def __getitem__(self, item: str) -> Any:
         return self.__dict__[item]
 
-    def __setitem__(self, key: str, value: Union[bool, int, Dict]) -> None:
+    def __setitem__(self, key: str, value: Any) -> None:
         self.__dict__[key] = value
 
     def __delitem__(self, key) -> None:

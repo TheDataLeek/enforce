@@ -1,5 +1,5 @@
 import typing
-from typing import Optional, List
+from typing import Optional, List, NamedTuple, Any, Union, Type
 import inspect
 
 from .wrappers import EnforceProxy
@@ -7,15 +7,21 @@ from .types import is_type_of_type, is_named_tuple
 from .exceptions import RuntimeTypeError
 
 
-ValidationResult = typing.NamedTuple('ValidationResult', [('valid', bool), ('data', typing.Any), ('type_name', str)])
+ValidationResult = NamedTuple(
+    'ValidationResult', [
+        ('valid', bool),
+        ('data', Any),
+        ('type_name', str)
+    ]
+)
 
 
 class BaseNode:
 
     def __init__(
             self,
-            expected_data_type,
-            is_sequence,
+            expected_data_type: Type[Any],
+            is_sequence: bool,
             type_var: Optional[bool]=False,
             covariant: Optional[bool]=None,
             contravariant: Optional[bool]=None
@@ -34,8 +40,8 @@ class BaseNode:
         self.data_out = None
 
         # TypeVar stuff
-        self.bound = False
-        self.in_type = None
+        self.bound = False # type: bool
+        self.in_type = None # type: Type[Any]
 
         self.original_children = [] # type: List
         self.children = [] # type: List
@@ -59,23 +65,23 @@ class BaseNode:
         clean_data = self.preprocess_data(validator, data)
 
         # 2
-        self_validation_result = self.validate_data(validator, clean_data, force)
+        self_validation_result = self.validate_data(validator, clean_data, force) # type: ValidationResult
 
         # 3
         if not self_validation_result.valid:
             yield self_validation_result
             return
 
-        propagated_data = self.map_data(validator, self_validation_result)
+        propagated_data = self.map_data(validator, self_validation_result) # type: List
 
         # 4
         child_validation_results = yield self.validate_children(validator, propagated_data)
 
         # 5
         if self.is_sequence:
-            valid = all(result.valid for result in child_validation_results)
+            valid = all(result.valid for result in child_validation_results) # type: bool
         else:
-            valid = any(result.valid for result in child_validation_results)
+            valid = any(result.valid for result in child_validation_results) # type: bool
 
         actual_type = self.get_actual_data_type(self_validation_result, child_validation_results, valid)
 
@@ -152,7 +158,7 @@ class BaseNode:
         """
         return data
 
-    def validate_data(self, validator, data, sticky=False) -> bool:
+    def validate_data(self, validator, data, sticky=False) -> ValidationResult:
         """
         Responsible for determining if node is of specific type
         """
@@ -200,7 +206,7 @@ class SimpleNode(BaseNode):
     def __init__(self, expected_data_type, **kwargs):
         super().__init__(expected_data_type, is_sequence=True, type_var=False, **kwargs)
 
-    def validate_data(self, validator, data, sticky=False):
+    def validate_data(self, validator, data, sticky: bool=False) -> ValidationResult:
         if self.bound:
             expected_data_type = self.in_type
         else:
@@ -251,7 +257,7 @@ class UnionNode(BaseNode):
     def __init__(self, **kwargs):
         super().__init__(typing.Any, is_sequence=False, **kwargs)
 
-    def validate_data(self, validator, data, sticky=False):
+    def validate_data(self, validator, data, sticky=False) -> ValidationResult:
         return ValidationResult(valid=True, data=data, type_name=type(data).__name__)
 
     def map_data(self, validator, self_validation_result):
@@ -276,7 +282,7 @@ class TypeVarNode(BaseNode):
     def __init__(self, **kwargs):
         super().__init__(expected_data_type=None, is_sequence=True, type_var=True, **kwargs)
 
-    def validate_data(self, validator, data, sticky=False):
+    def validate_data(self, validator, data, sticky=False) -> ValidationResult:
         return ValidationResult(valid=True, data=data, type_name='typing.TypeVar')
 
     def map_data(self, validator, self_validation_result):

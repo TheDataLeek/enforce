@@ -3,8 +3,9 @@ import typing
 import threading
 import functools
 from functools import wraps
+from collections import OrderedDict
 
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple, NamedTuple, Union, Dict, Any
 
 from wrapt import decorator, ObjectProxy
 
@@ -18,32 +19,42 @@ BuildLock = threading.RLock()
 RunLock = threading.RLock()
 
 
-def runtime_validation(data=None, *, enabled: Optional[bool]=None, group: Optional[str]=None):
+def runtime_validation(
+        data: Optional[Union[NamedTuple, Any]]=None,
+        *,
+        enabled: Optional[bool]=None,
+        group: Optional[str]=None
+    ) -> Union[object, functools.partial]:
     """
     This decorator enforces runtime parameter and return value type checking validation
     It uses the standard Python 3.5 syntax for type hinting declaration
     """
-    with RunLock:
+    with RunLock:  # prevents threading errors
         if enabled is not None and not isinstance(enabled, bool):
             raise TypeError('Enabled parameter must be boolean')
 
         if group is not None and not isinstance(group, str):
             raise TypeError('Group parameter must be string')
 
+        # If no params are given, set to enabled by default
         if enabled is None and group is None:
             enabled = True
 
         # see https://wrapt.readthedocs.io/en/latest/decorators.html#decorators-with-optional-arguments
+        # if no other params are given, just apply "default" operation
         if data is None:
             return functools.partial(runtime_validation, enabled=enabled, group=group)
 
+        # otherwise we need to parse the data
         configuration = Settings(enabled=enabled, group=group) # type: Settings
 
-        if data.__class__ is type and is_type_of_type(data, tuple, covariant=True):
+        if isinstance(data.__class__, type) and is_type_of_type(data, tuple, covariant=True):
             try:
-                fields = data._fields
-                field_types = data._field_types
+                fields = data._fields # type: Tuple[str, ...]
+                # this type is giving error in mypy even though it *works* and is *correct*
+                field_types = data._field_types # type: OrderedDict[str, type]
 
+                # This is the NameTupleProxy from below
                 return get_typed_namedtuple(configuration, data, fields, field_types)
 
             except AttributeError:
@@ -51,7 +62,7 @@ def runtime_validation(data=None, *, enabled: Optional[bool]=None, group: Option
 
         build_wrapper = get_wrapper_builder(configuration)
 
-        if data.__class__ is property:
+        if isinstance(data.__class__, property):
             generate_decorated = build_wrapper(data.fset)
             return data.setter(generate_decorated())
 
@@ -121,7 +132,7 @@ def get_universal_decorator():
     return decorator(universal)
 
 
-def get_wrapper_builder(configuration, excluded_fields=None):
+def get_wrapper_builder(configuration: Settings, excluded_fields=None) -> Callable:
     if excluded_fields is None:
         excluded_fields = set()
 
@@ -168,11 +179,16 @@ def get_wrapper_builder(configuration, excluded_fields=None):
     return decorator(build_wrapper)
 
 
-def get_typed_namedtuple(configuration, typed_namedtuple, fields, fields_types):
+def get_typed_namedtuple(
+        configuration: Settings,
+        typed_namedtuple: NamedTuple,
+        fields: Tuple[str, ...],
+        fields_types: OrderedDict[str, type]
+    ) -> object:
     args = ''.join(field + ': ' + (fields_types.get(field, any)).__name__ + ',' for field in fields)
     args = args[:-1]
 
-    context = {}
+    context: Dict = {}
 
     new_init_template = """def init_data({args}): return locals()"""
 

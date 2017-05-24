@@ -1,4 +1,5 @@
 import typing
+from typing import Callable, Optional, Dict, List, Tuple, Union
 import inspect
 from collections import namedtuple, OrderedDict
 
@@ -22,7 +23,15 @@ class Enforcer:
     """
     A container for storing type checking logic of functions
     """
-    def __init__(self, validator, signature, hints, generic=False, bound=False, settings=None):
+    def __init__(
+            self,
+            validator: Validator,
+            signature: inspect.Signature,
+            hints: Dict,
+            generic: bool=False,
+            bound: bool=False,
+            settings=None
+        ) -> None:
         self.validator = validator
         self.signature = signature
         self.hints = hints
@@ -44,10 +53,10 @@ class Enforcer:
         If it is None, then it generates a new Callable type from the object's signature
         """
         if self.settings is not None and not self.settings:
-            return typing.Callable
+            return Callable
 
         if hasattr(self.reference, '__no_type_check__'):
-            return typing.Callable
+            return Callable
 
         if self._callable_signature is None:
             self._callable_signature = generate_callable_from_signature(self.signature)
@@ -139,11 +148,11 @@ class GenericProxy(ObjectProxy):
         return GenericProxy(self.__wrapped__.__getitem__(param))
 
 
-def apply_enforcer(func: typing.Callable,
+def apply_enforcer(func: Union[Callable, Proxy],
                    generic: bool=False,
                    settings = None,
-                   parent_root: typing.Optional[Validator]=None,
-                   instance_of: typing.Optional[GenericProxy]=None) -> typing.Callable:
+                   parent_root: Optional[Validator]=None,
+                   instance_of: Optional[GenericProxy]=None) -> Callable:
     """
     Adds an Enforcer instance to the passed function/generic if it doesn't yet exist
     or if it is not an instance of Enforcer
@@ -162,20 +171,24 @@ def apply_enforcer(func: typing.Callable,
     return func
 
 
-def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
+def generate_new_enforcer(
+        func: Union[Callable, Proxy],
+        generic: bool,
+        parent_root: Optional[Validator],
+        instance_of: Optional[GenericProxy],
+        settings
+    ) -> Enforcer:
     """
     Private function for generating new Enforcer instances for the incoming function
     """
-    if parent_root is not None:
-        if type(parent_root) is not Validator:
-            raise TypeError('Parent validator must be a Validator')
+    if parent_root is not None and not isinstance(parent_root, Validator):
+        raise TypeError('Parent validator must be a Validator')
 
-    if instance_of is not None:
-        if type(instance_of) is not GenericProxy:
-            raise TypeError('Instance of a generic must be derived from a valid Generic Proxy')
+    if instance_of is not None and not isinstance(instance_of, GenericProxy):
+        raise TypeError('Instance of a generic must be derived from a valid Generic Proxy')
 
     if generic:
-        hints = OrderedDict()
+        hints = OrderedDict() # type: Union[Dict, OrderedDict]
 
         if instance_of:
             func = instance_of
@@ -216,7 +229,7 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
 
         validator = init_validator(hints, parent_root)
     else:
-        if type(func) is Proxy:
+        if isinstance(func, Proxy):
             signature = inspect.signature(func.__wrapped__)
             hints = typing.get_type_hints(func.__wrapped__)
         else:
@@ -229,7 +242,7 @@ def generate_new_enforcer(func, generic, parent_root, instance_of, settings):
     return Enforcer(validator, signature, hints, generic, bound, settings)
 
 
-def parse_errors(errors: typing.List[str], hints:typing.Dict[str, type], return_type: bool=False) -> str:
+def parse_errors(errors: List[Tuple[str, str]], hints: Dict[str, type], return_type: bool=False) -> str:
     """
     Generates an exception message based on which fields failed
     """
